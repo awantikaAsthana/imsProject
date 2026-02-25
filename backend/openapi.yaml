@@ -1,0 +1,283 @@
+openapi: 3.0.3
+info:
+  title: IMS Backend API
+  version: 1.0.0
+  description: OpenAPI specification for the IMS backend. Covers auth, products, stock, supply, dispatch and reports routes.
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+paths:
+  /auth/login:
+    post:
+      summary: Authenticate user and obtain JWT token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCredentials'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '401':
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      summary: Logout user (invalidate token)
+      tags: [Auth]
+      responses:
+        '200':
+          description: Logged out
+
+  /auth/refresh:
+    post:
+      summary: Refresh authentication token
+      tags: [Auth]
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+
+  /products:
+    get:
+      summary: List products
+      tags: [Products]
+      responses:
+        '200':
+          description: A list of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+    post:
+      summary: Create a new product
+      tags: [Products]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      responses:
+        '201':
+          description: Product created
+
+  /products/{productId}:
+    parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get a product by id
+      tags: [Products]
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Not found
+    put:
+      summary: Update a product
+      tags: [Products]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      responses:
+        '200':
+          description: Product updated
+    delete:
+      summary: Delete a product
+      tags: [Products]
+      responses:
+        '204':
+          description: Product deleted
+
+  /stock:
+    get:
+      summary: Get inventory stock list
+      tags: [Stock]
+      responses:
+        '200':
+          description: Stock items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StockItem'
+    post:
+      summary: Adjust or add stock
+      tags: [Stock]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockItem'
+      responses:
+        '200':
+          description: Stock adjusted
+
+  /supply/orders:
+    get:
+      summary: List purchase orders
+      tags: [Supply]
+      responses:
+        '200':
+          description: Orders list
+    post:
+      summary: Create a purchase order
+      tags: [Supply]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order'
+      responses:
+        '201':
+          description: Order created
+
+  /supply/orders/{orderId}:
+    parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get order details
+      tags: [Supply]
+      responses:
+        '200':
+          description: Order details
+
+  /dispatch/shipments:
+    get:
+      summary: List shipments
+      tags: [Dispatch]
+      responses:
+        '200':
+          description: Shipments list
+    post:
+      summary: Create shipment
+      tags: [Dispatch]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Shipment'
+      responses:
+        '201':
+          description: Shipment created
+
+  /reports:
+    get:
+      summary: Get report list or generate report
+      tags: [Reports]
+      responses:
+        '200':
+          description: Reports
+
+components:
+  schemas:
+    UserCredentials:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    AuthToken:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        sku:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+        quantity:
+          type: integer
+
+    StockItem:
+      type: object
+      properties:
+        product_id:
+          type: string
+        location:
+          type: string
+        quantity:
+          type: integer
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        supplier:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        status:
+          type: string
+
+    Shipment:
+      type: object
+      properties:
+        id:
+          type: string
+        carrier:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        generated_at:
+          type: string
+          format: date-time

@@ -40,7 +40,12 @@ def login():
     "email": user.email,
     "role": user.role
 })
-    return jsonify({"access_token": access_token, "refresh_token": refresh_token}), 200
+    return jsonify({"access_token": access_token, "refresh_token": refresh_token, "user": {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "role": user.role
+    }}), 200
 
 @auth.route('/profile', methods=['GET'])
 @jwt_required()

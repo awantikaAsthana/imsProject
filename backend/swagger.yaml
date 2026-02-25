@@ -1,0 +1,90 @@
+
+openapi: 3.0.0
+info:
+  title: Inventory Management API
+  version: 1.0.0
+  description: API for Authentication, Product, Stock, Supply, Dispatch and Reports
+
+servers:
+  - url: http://localhost:5000
+
+paths:
+
+  /auth/register:
+    post:
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                name:
+                  type: string
+      responses:
+        201:
+          description: User created
+
+  /auth/login:
+    post:
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        200:
+          description: JWT Tokens returned
+
+  /product:
+    get:
+      summary: Get all products
+      responses:
+        200:
+          description: List of products
+
+    post:
+      summary: Create product
+      responses:
+        201:
+          description: Product created
+
+  /stock:
+    get:
+      summary: Get stock data
+      responses:
+        200:
+          description: Stock list
+
+  /supply:
+    post:
+      summary: Add supply
+      responses:
+        201:
+          description: Supply added
+
+  /dispatch:
+    post:
+      summary: Dispatch product
+      responses:
+        201:
+          description: Dispatch recorded
+
+  /report:
+    get:
+      summary: Get reports
+      responses:
+        200:
+          description: Report data

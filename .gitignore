@@ -1,0 +1,7 @@
+backend/__pycache__/
+backend/*.pyc
+backend/instance/
+backend/.env
+frontend/node_modules/
+frontend/package-lock.json
+frontend/yarn.lock
