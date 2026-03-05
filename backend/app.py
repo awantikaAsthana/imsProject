@@ -16,9 +16,6 @@ app = Flask(__name__)
 
 CORS(app)
 
-swagger = Swagger(app)
-
-
 app.config.from_object(Config)
 db.init_app(app)
 bcrypt.init_app(app)
