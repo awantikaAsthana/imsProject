@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from models import Dispatch, Product, db
+from utils.api_response import api_response
 
 dispatch = Blueprint('dispatch', __name__, url_prefix='/dispatch')
 
@@ -12,7 +13,7 @@ def create_dispatch():
     data = request.get_json()
 
     if not data or not all(k in data for k in ("product_id", "quantity", "recipient")):
-        return jsonify({"msg": "Missing required fields"}), 400
+        return api_response(status_code=400, message="Missing required fields")
 
     dispatch_record = Dispatch(
         product_id=data['product_id'],
@@ -28,7 +29,7 @@ def create_dispatch():
     db.session.add(dispatch_record)
     db.session.commit()
 
-    return jsonify({"msg": "Dispatch record created successfully"}), 201
+    return api_response(status_code=201, message="Dispatch record created successfully")
 
 
 # ---------------- DISPATCH HISTORY ----------------
@@ -42,7 +43,7 @@ def get_dispatch_history():
         Dispatch.id.desc()
     ).paginate(page=page, per_page=per_page, error_out=False)
 
-    return jsonify({
+    return api_response(status_code=200, message="Dispatch history retrieved successfully", data={
         "data": [
             {
                 "id": d.id,
@@ -64,7 +65,7 @@ def get_dispatch_history():
             "has_next": pagination.has_next,
             "has_prev": pagination.has_prev
         }
-    }), 200
+    })
 
 
 # ---------------- DISPATCHES BY PRODUCT ----------------
@@ -80,7 +81,7 @@ def get_product_dispatches(product_id):
         Dispatch.id.desc()
     ).paginate(page=page, per_page=per_page, error_out=False)
 
-    return jsonify({
+    return api_response(status_code=200, message="Product dispatches retrieved successfully", data={
         "data": [
             {
                 "id": d.id,
@@ -100,7 +101,7 @@ def get_product_dispatches(product_id):
             "total_items": pagination.total,
             "total_pages": pagination.pages
         }
-    }), 200
+    })
 
 
 # ---------------- DISPATCHES BY PARTY ----------------
@@ -116,7 +117,7 @@ def get_dispatches_by_party(party_id):
         Dispatch.id.desc()
     ).paginate(page=page, per_page=per_page, error_out=False)
 
-    return jsonify({
+    return api_response(status_code=200, message="Dispatches by party retrieved successfully", data={
         "data": [
             {
                 "id": d.id,
@@ -136,7 +137,7 @@ def get_dispatches_by_party(party_id):
             "total_items": pagination.total,
             "total_pages": pagination.pages
         }
-    }), 200
+    })
 
 
 # ---------------- EDIT DISPATCH ----------------
@@ -147,7 +148,7 @@ def edit_dispatch(dispatch_id):
     data = request.get_json()
 
     if not data:
-        return jsonify({"msg": "No data provided"}), 400
+        return api_response(status_code=400, message="No data provided")
 
     dispatch_record.product_id = data.get('product_id', dispatch_record.product_id)
     dispatch_record.quantity = data.get('quantity', dispatch_record.quantity)
@@ -160,7 +161,7 @@ def edit_dispatch(dispatch_id):
 
     db.session.commit()
 
-    return jsonify({"msg": "Dispatch record updated successfully"}), 200
+    return api_response(status_code=200, message="Dispatch record updated successfully")
 
 
 # ---------------- DELETE DISPATCH ----------------
@@ -171,4 +172,4 @@ def delete_dispatch(dispatch_id):
     db.session.delete(dispatch_record)
     db.session.commit()
 
-    return jsonify({"msg": "Dispatch record deleted successfully"}), 200
+    return api_response(status_code=200, message="Dispatch record deleted successfully")

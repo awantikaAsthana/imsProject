@@ -1,8 +1,21 @@
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import MetricCard from "@/components/dashboard/MetricCard";
-import { Package, Users, DollarSign, AlertTriangle, TrendingUp } from "lucide-react";
-import { products, users, salesData, weeklySalesData, yearlySalesData, recentActivity } from "@/data/mockData";
+import {
+  Package,
+  Users,
+  DollarSign,
+  AlertTriangle,
+  TrendingUp,
+} from "lucide-react";
+import {
+  products,
+  users,
+  salesData,
+  weeklySalesData,
+  yearlySalesData,
+  recentActivity,
+} from "@/data/mockData";
 import {
   AreaChart,
   Area,
@@ -29,9 +42,32 @@ const Dashboard = () => {
   const lowStockItems = products.filter((p) => p.status === "low-stock").length;
   const totalUsers = users.length;
   const totalValue = products.reduce((acc, p) => acc + p.quantity * p.price, 0);
+  const [user, setUser] = useState(() => {
+    try {
+      const user = localStorage.getItem("auth_user");
+      if (user) {
+        const { name } = JSON.parse(user);
+        return {
+          name: name,
+          initial: name
+            .split(" ")
+            .map((n: string) => n[0])
+            .join(""),
+        };
+      }
+      return { name: "John Doe", initial: "!" };
+    } catch (error) {
+      console.error("Error parsing user data from localStorage:", error);
+      return { name: "John Doe", initial: "!" };
+    }
+  });
 
   return (
-    <MainLayout title="Dashboard" subtitle="Welcome back! Here's what's happening.">
+    <MainLayout
+      title="Dashboard"
+      subtitle={`Welcome ${user.name}! Here's what's happening.`}
+      initial={user.initial}
+    >
       {/* Metrics Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
@@ -74,13 +110,23 @@ const Dashboard = () => {
         <div className="lg:col-span-2 rounded-xl border border-border bg-card p-6 card-shadow animate-fade-in">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-card-foreground">Sales Overview</h3>
+              <h3 className="text-lg font-semibold text-card-foreground">
+                Sales Overview
+              </h3>
               <p className="text-sm text-muted-foreground">
-                {timeRange === "weekly" ? "This week's" : timeRange === "monthly" ? "Monthly" : "Yearly"} sales performance
+                {timeRange === "weekly"
+                  ? "This week's"
+                  : timeRange === "monthly"
+                    ? "Monthly"
+                    : "Yearly"}{" "}
+                sales performance
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <Tabs value={timeRange} onValueChange={(v) => setTimeRange(v as TimeRange)}>
+              <Tabs
+                value={timeRange}
+                onValueChange={(v) => setTimeRange(v as TimeRange)}
+              >
                 <TabsList>
                   <TabsTrigger value="weekly">Weekly</TabsTrigger>
                   <TabsTrigger value="monthly">Monthly</TabsTrigger>
@@ -97,11 +143,22 @@ const Dashboard = () => {
             <AreaChart data={currentSalesData}>
               <defs>
                 <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(234, 89%, 60%)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(234, 89%, 60%)" stopOpacity={0} />
+                  <stop
+                    offset="5%"
+                    stopColor="hsl(234, 89%, 60%)"
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="hsl(234, 89%, 60%)"
+                    stopOpacity={0}
+                  />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="hsl(220, 13%, 91%)"
+              />
               <XAxis
                 dataKey="month"
                 stroke="hsl(220, 9%, 46%)"
@@ -138,7 +195,9 @@ const Dashboard = () => {
 
         {/* Recent Activity */}
         <div className="rounded-xl border border-border bg-card p-6 card-shadow animate-fade-in">
-          <h3 className="mb-4 text-lg font-semibold text-card-foreground">Recent Activity</h3>
+          <h3 className="mb-4 text-lg font-semibold text-card-foreground">
+            Recent Activity
+          </h3>
           <div className="space-y-4">
             {recentActivity.map((activity) => (
               <div

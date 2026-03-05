@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { Login } from "../api/auth";
+import { Login,ChangePassword } from "../api/auth";
 
 interface User {
   id: string;
@@ -35,26 +35,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem("auth_refresh_token", user.authRefreshToken); // Store refresh token
     } else {
       localStorage.removeItem("auth_user");
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_refresh_token");
     }
   }, [user]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Mock authentication - accepts any email with password "password"
-    const userData = await Login(email, password)
-  try{ // Call the mock API function
-    if (userData && userData.access_token) {
-      console.log(userData)
-
+  const Res = await Login(email, password)
+  try{ 
+    if (Res.success) {
+      const userData = Res.data;
       const loggedInUser = {
         email,
         name: userData.user.name,
         role: userData.user.role,
         id: userData.user.id,
         authRefreshToken: userData.refresh_token,
-        authToken: userData.access_toke
+        authToken: userData.access_token
       };
       setUser(loggedInUser);
       return true;
+
     }}catch(error){
       console.error("Login error:", error);
     }
@@ -72,9 +73,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
-    // Mock password change - just validate lengths
-    if (currentPassword.length >= 6 && newPassword.length >= 6) {
-      return true;
+   
+    if (currentPassword.length >= 6 && newPassword.length >= 6 ) {
+      try {
+        const response = await ChangePassword(currentPassword, newPassword);
+        const result = {...response, sucess:true};
+        return result;
+          
+      } catch (error) {
+        const result = {...error,success: true};
+        return result;
+      }
     }
     return false;
   };

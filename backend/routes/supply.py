@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from models import Supply, User, db
+from utils.api_response import api_response
 
 supply = Blueprint('supply', __name__, url_prefix='/supply')
 
@@ -11,7 +12,7 @@ def create_supply():
     data = request.get_json()
 
     if not data or not all(k in data for k in ("product_id", "quantity", "supplier")):
-        return jsonify({"msg": "Missing required fields"}), 400
+        return api_response(status_code=400, message="Missing required fields")
 
     supply = Supply(
         product_id=data['product_id'],
@@ -27,7 +28,7 @@ def create_supply():
     db.session.add(supply)
     db.session.commit()
 
-    return jsonify({"msg": "Supply record created successfully"}), 201
+    return api_response(status_code=201, message="Supply record created successfully")
 
 
 @supply.route('/history', methods=['GET'])
@@ -42,7 +43,7 @@ def get_supply_history():
         error_out=False
     )
 
-    return jsonify({
+    return api_response(status_code=200, message="Supply history retrieved successfully", data={
         "data": [
             {
                 "id": s.id,
@@ -64,7 +65,7 @@ def get_supply_history():
             "has_next": pagination.has_next,
             "has_prev": pagination.has_prev
         }
-    }), 200
+    })
 
 
 @supply.route('/product/<int:product_id>/supplies', methods=['GET'])
@@ -77,7 +78,7 @@ def get_product_supplies(product_id):
         .order_by(Supply.id.desc())\
         .paginate(page=page, per_page=per_page, error_out=False)
 
-    return jsonify({
+    return api_response(status_code=200, message="Product supplies retrieved successfully", data={
         "data": [
             {
                 "id": s.id,
@@ -97,7 +98,7 @@ def get_product_supplies(product_id):
             "total_items": pagination.total,
             "total_pages": pagination.pages
         }
-    }), 200
+    })
 
 
 @supply.route('/party/<int:party_id>', methods=['GET'])
@@ -110,7 +111,7 @@ def get_supplies_by_party(party_id):
         .order_by(Supply.id.desc())\
         .paginate(page=page, per_page=per_page, error_out=False)
 
-    return jsonify({
+    return api_response(status_code=200, message="Supplies by party retrieved successfully", data={
         "data": [
             {
                 "id": s.id,
@@ -130,7 +131,7 @@ def get_supplies_by_party(party_id):
             "total_items": pagination.total,
             "total_pages": pagination.pages
         }
-    }), 200
+    })
 
 
 @supply.route('/edit/<int:supply_id>', methods=['PUT'])
@@ -140,7 +141,7 @@ def edit_supply(supply_id):
     data = request.get_json()
 
     if not data:
-        return jsonify({"msg": "No data provided"}), 400
+        return api_response(status_code=400, message="No data provided")
 
     supply.product_id = data.get('product_id', supply.product_id)
     supply.quantity = data.get('quantity', supply.quantity)
@@ -153,7 +154,7 @@ def edit_supply(supply_id):
 
     db.session.commit()
 
-    return jsonify({"msg": "Supply record updated successfully"}), 200
+    return api_response(status_code=200, message="Supply record updated successfully")
 
 
 @supply.route('/delete/<int:supply_id>', methods=['DELETE'])
@@ -163,4 +164,4 @@ def delete_supply(supply_id):
     db.session.delete(supply)
     db.session.commit()
 
-    return jsonify({"msg": "Supply record deleted successfully"}), 200
+    return api_response(status_code=200, message="Supply record deleted successfully")
