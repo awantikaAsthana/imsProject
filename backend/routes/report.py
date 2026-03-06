@@ -32,7 +32,7 @@ def get_dispatch_report():
                 "e_waybill_number": d.e_waybill_number,
                 "challan_number": d.challan_number,
                 "dispatched_address": d.dispatched_address,
-                "date_dispatched": d.date_dispatched.isoformat() if d.date_dispatched else None
+                "date_dispatched": d.date_dispatched.strftime("%Y-%m-%d") if d.date_dispatched else None
             } for d in dispatches
         ]
     })
@@ -62,7 +62,7 @@ def get_supply_report():
                 "party_id": s.party_id,
                 "e_waybill_number_s": s.e_waybill_number_s,
                 "challan_number": s.challan_number,
-                "date_supplied": s.date_supplied.isoformat() if s.date_supplied else None,
+                "date_supplied": s.date_supplied.strftime("%Y-%m-%d") if s.date_supplied else None,
                 "remarks": s.remarks
             } for s in supplies
         ])

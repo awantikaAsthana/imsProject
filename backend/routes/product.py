@@ -57,7 +57,7 @@ def get_products():
                 "stock": p.stock,
                 "unit": p.unit,
                 "created_by": p.created_by,
-                "created_at": p.created_at.isoformat(),
+                "created_at": p.created_at.strftime("%Y-%m-%d"),
                 "is_active": p.is_active
             } for p in products
         ],
@@ -86,7 +86,7 @@ def get_product(product_id):
         "stock": product.stock,
         "unit": product.unit,
         "created_by": product.created_by,
-        "created_at": product.created_at.isoformat(),
+        "created_at": product.created_at.strftime("%Y-%m-%d"),
         "is_active": product.is_active
     })
 

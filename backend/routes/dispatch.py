@@ -54,7 +54,7 @@ def get_dispatch_history():
                 "e_waybill_number": d.e_waybill_number,
                 "challan_number": d.challan_number,
                 "dispatched_address": d.dispatched_address,
-                "date_dispatched": d.date_dispatched.isoformat() if d.date_dispatched else None
+                "date_dispatched": d.date_dispatched.strftime("%Y-%m-%d") if d.date_dispatched else None
             } for d in pagination.items
         ],
         "pagination": {
@@ -92,7 +92,7 @@ def get_product_dispatches(product_id):
                 "e_waybill_number": d.e_waybill_number,
                 "challan_number": d.challan_number,
                 "dispatched_address": d.dispatched_address,
-                "date_dispatched": d.date_dispatched.isoformat() if d.date_dispatched else None
+                "date_dispatched": d.date_dispatched.strftime("%Y-%m-%d") if d.date_dispatched else None
             } for d in pagination.items
         ],
         "pagination": {
@@ -128,7 +128,7 @@ def get_dispatches_by_party(party_id):
                 "e_waybill_number": d.e_waybill_number,
                 "challan_number": d.challan_number,
                 "dispatched_address": d.dispatched_address,
-                "date_dispatched": d.date_dispatched.isoformat() if d.date_dispatched else None
+                "date_dispatched": d.date_dispatched.strftime("%Y-%m-%d") if d.date_dispatched else None
             } for d in pagination.items
         ],
         "pagination": {

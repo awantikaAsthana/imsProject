@@ -5,6 +5,7 @@ from flask_restx import Api
 from routes.stock import stock
 from routes.supply import supply
 from routes.product import product_bp
+from routes.supplier import supplier_bp
 from config import Config
 from extensions import db, bcrypt, jwt
 from routes.auth import auth
@@ -14,7 +15,11 @@ from models import TokenBlocklist
 
 app = Flask(__name__)
 
-CORS(app)
+CORS(
+    app,
+    resources={r"/api/*": {"origins": "*"}},
+    supports_credentials=True
+)
 
 app.config.from_object(Config)
 db.init_app(app)
@@ -26,6 +31,7 @@ app.register_blueprint(auth, url_prefix='/api/auth')
 app.register_blueprint(product_bp, url_prefix='/api/product')
 app.register_blueprint(stock, url_prefix='/api/stock')
 app.register_blueprint(supply, url_prefix='/api/supply')
+app.register_blueprint(supplier_bp, url_prefix='/api/supplier')
 
 
 with app.app_context():
