@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
+
 import {
   Card,
   CardContent,
@@ -7,9 +8,11 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
 import {
   Table,
   TableBody,
@@ -18,7 +21,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import { Badge } from "@/components/ui/badge";
+
 import {
   Select,
   SelectContent,
@@ -26,16 +31,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PackagePlus, Truck } from "lucide-react";
+
+import { PackagePlus } from "lucide-react";
 
 import {
   fetchProducts,
-  fetchSuppliers,
   fetchSupplies,
   createSupply,
 } from "@/api/supply";
 
-import AddSupplierDialog from "@/components/supplier/AddSupplierDialog";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Supply() {
@@ -44,13 +48,12 @@ export default function Supply() {
   /* STATES */
 
   const [products, setProducts] = useState<any[]>([]);
-  const [suppliers, setSuppliers] = useState<any[]>([]);
   const [supplies, setSupplies] = useState<any[]>([]);
 
-  const [supplierPage, setSupplierPage] = useState(1);
-  const [supplyPage, setSupplyPage] = useState(1);
-
-  const [supplierDialog, setSupplierDialog] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrev, setHasPrev] = useState(false);
 
   const [form, setForm] = useState({
     product_id: "",
@@ -63,29 +66,48 @@ export default function Supply() {
     remarks: "",
   });
 
-  /* LOADERS */
+  /* LOAD PRODUCTS */
 
   const loadProducts = async () => {
-    const res = await fetchProducts();
-    setProducts(res.data.data.data);
+    try {
+      const res = await fetchProducts();
+      setProducts(res.data.data.data);
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to load products",
+        variant: "destructive",
+      });
+    }
   };
 
-  const loadSuppliers = async () => {
-    const res = await fetchSuppliers(supplierPage);
-    setSuppliers(res.data.data.data);
-  };
+  /* LOAD SUPPLIES WITH PAGINATION */
 
-  const loadSupplies = async () => {
-    const res = await fetchSupplies(supplyPage);
-    setSupplies(res.data.data.data);
-  };
+const loadSupplies = async (pageNumber = 1) => {
+  try {
+    const res = await fetchSupplies(pageNumber);
+
+    const suppliesData = res.data?.data || [];
+    const pagination = res.data?.pagination || {};
+
+    setSupplies(Array.isArray(suppliesData) ? suppliesData : []);
+
+    setPage(pagination.page || 1);
+    setTotalPages(pagination.total_pages || 1);
+
+    setHasNext(pagination.has_next || false);
+    setHasPrev(pagination.has_prev || false);
+
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   /* INITIAL LOAD */
 
   useEffect(() => {
     loadProducts();
-    loadSuppliers();
-    loadSupplies();
+    loadSupplies(page);
   }, []);
 
   /* CREATE SUPPLY */
@@ -101,7 +123,7 @@ export default function Supply() {
         description: "Supply record created",
       });
 
-      loadSupplies();
+      loadSupplies(page);
     } catch {
       toast({
         title: "Error",
@@ -123,12 +145,16 @@ export default function Supply() {
 
       case "received":
         return "bg-green-100 text-green-800";
+
+      default:
+        return "";
     }
   };
 
   return (
     <MainLayout title="Supply" subtitle="Add products to inventory">
       <div className="grid gap-6 lg:grid-cols-3">
+
         {/* SUPPLY FORM */}
 
         <Card className="lg:col-span-1">
@@ -137,27 +163,25 @@ export default function Supply() {
               <PackagePlus className="h-5 w-5" />
               New Supply
             </CardTitle>
+
             <CardDescription>Add supply to inventory</CardDescription>
           </CardHeader>
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+
               {/* PRODUCT */}
 
               <div>
                 <Label>Product</Label>
 
                 <Select
-                  onValueChange={(value) => {
-                    const product = products.find(
-                      (p) => p.id.toString() === value,
-                    );
-
+                  onValueChange={(value) =>
                     setForm({
                       ...form,
                       product_id: value,
-                    });
-                  }}
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select product" />
@@ -173,37 +197,6 @@ export default function Supply() {
                 </Select>
               </div>
 
-              {/* SUPPLIER */}
-
-              <div>
-                <Label>Supplier</Label>
-
-                <Select
-                  onValueChange={(v) => setForm({ ...form, party_id: v, supplier: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select supplier" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    {suppliers.map((s) => (
-                      <SelectItem key={s.id} value={s.id.toString()}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="mt-2 w-full"
-                  onClick={() => setSupplierDialog(true)}
-                >
-                  Add Supplier
-                </Button>
-              </div>
-
               {/* QUANTITY */}
 
               <div>
@@ -213,7 +206,10 @@ export default function Supply() {
                   type="number"
                   value={form.quantity}
                   onChange={(e) =>
-                    setForm({ ...form, quantity: e.target.value })
+                    setForm({
+                      ...form,
+                      quantity: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -226,7 +222,10 @@ export default function Supply() {
                 <Input
                   value={form.e_waybill_number}
                   onChange={(e) =>
-                    setForm({ ...form, e_waybill_number: e.target.value })
+                    setForm({
+                      ...form,
+                      e_waybill_number: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -239,7 +238,10 @@ export default function Supply() {
                 <Input
                   value={form.challan_number}
                   onChange={(e) =>
-                    setForm({ ...form, challan_number: e.target.value })
+                    setForm({
+                      ...form,
+                      challan_number: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -252,7 +254,10 @@ export default function Supply() {
                 <Input
                   type="date"
                   onChange={(e) =>
-                    setForm({ ...form, date_supplied: e.target.value })
+                    setForm({
+                      ...form,
+                      date_supplied: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -265,7 +270,10 @@ export default function Supply() {
                 <Input
                   value={form.remarks}
                   onChange={(e) =>
-                    setForm({ ...form, remarks: e.target.value })
+                    setForm({
+                      ...form,
+                      remarks: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -287,6 +295,7 @@ export default function Supply() {
 
           <CardContent>
             <Table>
+
               <TableHeader>
                 <TableRow>
                   <TableHead>Product</TableHead>
@@ -313,46 +322,39 @@ export default function Supply() {
                   </TableRow>
                 ))}
               </TableBody>
+
             </Table>
+
+            {/* PAGINATION */}
+
+            <div className="flex items-center justify-between mt-4">
+
+              <Button
+                variant="outline"
+                disabled={!hasPrev}
+                onClick={() => loadSupplies(page - 1)}
+              >
+                Previous
+              </Button>
+
+              <span className="text-sm font-medium">
+                Page {page} of {totalPages}
+              </span>
+
+              <Button
+                variant="outline"
+                disabled={!hasNext}
+                onClick={() => loadSupplies(page + 1)}
+              >
+                Next
+              </Button>
+
+            </div>
+
           </CardContent>
         </Card>
+
       </div>
-
-      {/* SUPPLIER CARD AT END */}
-
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Suppliers</CardTitle>
-        </CardHeader>
-
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>GST</TableHead>
-                <TableHead>Address</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {suppliers.map((s) => (
-                <TableRow key={s.id}>
-                  <TableCell>{s.name}</TableCell>
-                  <TableCell>{s.gst}</TableCell>
-                  <TableCell>{s.address}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <AddSupplierDialog
-        open={supplierDialog}
-        setOpen={setSupplierDialog}
-        reload={loadSuppliers}
-      />
     </MainLayout>
   );
 }

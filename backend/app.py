@@ -1,6 +1,5 @@
 
 from flask import Flask
-from flasgger import Swagger
 from flask_restx import Api
 from routes.stock import stock
 from routes.supply import supply

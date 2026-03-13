@@ -66,6 +66,10 @@ const Products = () => {
   const [productList, setProductList] = useState<Product[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrev, setHasPrev] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -77,23 +81,31 @@ const Products = () => {
     unit: "",
   });
 
-  const fetchProducts = async () => {
-    try {
-      const res = await getProductData();
-      const products = res.data?.data?.data ?? [];
-      setProductList(products);
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to fetch products",
-        variant: "destructive",
-      });
-    }
-  };
+const fetchProducts = async (pageNumber = 1) => {
+  try {
+    const res = await getProductData(pageNumber,10);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+    const responseData = res;
+
+    setProductList(responseData.data);
+
+    setPage(responseData.pagination.page);
+    setTotalPages(responseData.pagination.total_pages);
+    setHasNext(responseData.pagination.has_next);
+    setHasPrev(responseData.pagination.has_prev);
+
+  } catch {
+    toast({
+      title: "Error",
+      description: "Failed to fetch products",
+      variant: "destructive",
+    });
+  }
+};
+
+useEffect(() => {
+  fetchProducts(page);
+}, []);
 
   const filteredProducts = productList.filter((p) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -285,6 +297,31 @@ const Products = () => {
           </TableBody>
         </Table>
       </div>
+{/* Pagination */}
+
+<div className="flex items-center justify-between m-4">
+
+  <Button
+    variant="outline"
+    disabled={!hasPrev}
+    onClick={() => fetchProducts(page - 1)}
+  >
+    Previous
+  </Button>
+
+  <span className="text-sm font-medium">
+    Page {page} of {totalPages}
+  </span>
+
+  <Button
+    variant="outline"
+    disabled={!hasNext}
+    onClick={() => fetchProducts(page + 1)}
+  >
+    Next
+  </Button>
+
+</div>
 
       {/* ADD / EDIT POPUP */}
 
