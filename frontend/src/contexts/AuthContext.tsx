@@ -1,5 +1,11 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { Login } from "../api/auth";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from "react";
+import { Login, ChangePassword, VerifyToken, RefreshToken } from "../api/auth";
 
 interface User {
   id: string;
@@ -7,8 +13,8 @@ interface User {
   email: string;
   role: "admin" | "staff";
   avatar?: string;
-  authToken: string; // Store the authentication token
-  authRefreshToken: string; // Store the refresh token
+  authToken: string;
+  authRefreshToken: string;
 }
 
 interface AuthContextType {
@@ -17,67 +23,144 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => void;
-  changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+  ) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const STORAGE_USER = "auth_user";
+const STORAGE_TOKEN = "auth_token";
+const STORAGE_REFRESH = "auth_refresh_token";
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem("auth_user");
+    const stored = localStorage.getItem(STORAGE_USER);
     return stored ? JSON.parse(stored) : null;
   });
 
+  const [loading, setLoading] = useState(true);
+
+  // ---------------- STORAGE SYNC ----------------
+  const saveUser = (user: User | null) => {
+    if (!user) {
+      localStorage.removeItem(STORAGE_USER);
+      localStorage.removeItem(STORAGE_TOKEN);
+      localStorage.removeItem(STORAGE_REFRESH);
+      setUser(null);
+      return;
+    }
+
+    localStorage.setItem(STORAGE_USER, JSON.stringify(user));
+    localStorage.setItem(STORAGE_TOKEN, user.authToken);
+    localStorage.setItem(STORAGE_REFRESH, user.authRefreshToken);
+
+    setUser(user);
+  };
+
+  // ---------------- AUTH INIT ----------------
   useEffect(() => {
-    if (user) {
-      localStorage.setItem("auth_user", JSON.stringify(user));
-      localStorage.setItem("auth_token", user.authToken); // Store token for API calls
-      localStorage.setItem("auth_refresh_token", user.authRefreshToken); // Store refresh token
-    } else {
-      localStorage.removeItem("auth_user");
-    }
-  }, [user]);
+    const initializeAuth = async () => {
+      const token = localStorage.getItem(STORAGE_TOKEN);
+      const refresh = localStorage.getItem(STORAGE_REFRESH);
 
+      if (!token || !refresh) {
+        saveUser(null);
+        setLoading(false);
+        return;
+      }
+
+      const verify = await VerifyToken();
+
+      if (verify.success) {
+        setLoading(false);
+        return;
+      }
+
+      const refreshed = await RefreshToken(refresh);
+
+      if (!refreshed.success) {
+        saveUser(null);
+        setLoading(false);
+        return;
+      }
+
+      setUser((prev) => {
+        if (!prev) return null;
+
+        const updated = {
+          ...prev,
+          authToken: refreshed.data.access_token,
+        };
+
+        localStorage.setItem(STORAGE_TOKEN, updated.authToken);
+        localStorage.setItem(STORAGE_USER, JSON.stringify(updated));
+
+        return updated;
+      });
+
+      setLoading(false);
+    };
+
+    initializeAuth();
+  }, []);
+
+  // ---------------- LOGIN ----------------
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Mock authentication - accepts any email with password "password"
-    const userData = await Login(email, password)
-  try{ // Call the mock API function
-    if (userData && userData.access_token) {
-      console.log(userData)
+    try {
+      const res = await Login(email, password);
 
-      const loggedInUser = {
-        email,
-        name: userData.user.name,
-        role: userData.user.role,
+      if (!res?.success) return false;
+
+      const userData = res.data;
+
+      const loggedUser: User = {
         id: userData.user.id,
+        name: userData.user.name,
+        email,
+        role: userData.user.role,
+        authToken: userData.access_token,
         authRefreshToken: userData.refresh_token,
-        authToken: userData.access_toke
       };
-      setUser(loggedInUser);
+
+      saveUser(loggedUser);
+
       return true;
-    }}catch(error){
+    } catch (error) {
       console.error("Login error:", error);
+      return false;
     }
-    return false;
   };
 
+  // ---------------- LOGOUT ----------------
   const logout = () => {
-    setUser(null);
+    saveUser(null);
   };
 
+  // ---------------- UPDATE PROFILE ----------------
   const updateProfile = (data: Partial<User>) => {
-    if (user) {
-      setUser({ ...user, ...data });
+    if (!user) return;
+
+    const updated = { ...user, ...data };
+    saveUser(updated);
+  };
+
+  // ---------------- CHANGE PASSWORD ----------------
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<boolean> => {
+    try {
+      const res = await ChangePassword(currentPassword, newPassword);
+      return !!res?.success;
+    } catch {
+      return false;
     }
   };
 
-  const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
-    // Mock password change - just validate lengths
-    if (currentPassword.length >= 6 && newPassword.length >= 6) {
-      return true;
-    }
-    return false;
-  };
+  if (loading) return null;
 
   return (
     <AuthContext.Provider
@@ -95,10 +178,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// ---------------- HOOK ----------------
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider");
   }
+
   return context;
 };

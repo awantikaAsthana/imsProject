@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from models import Dispatch, Party, Product, db
+from utils.api_response import api_response
 
 report = Blueprint('report', __name__, url_prefix='/report')
 
@@ -20,7 +21,7 @@ def get_dispatch_report():
 
     dispatches = query.order_by(Dispatch.date_dispatched.desc()).all()
 
-    return jsonify({
+    return api_response(status_code=200, message="Dispatch report retrieved successfully", data={
         "data": [
             {
                 "id": d.id,
@@ -31,10 +32,10 @@ def get_dispatch_report():
                 "e_waybill_number": d.e_waybill_number,
                 "challan_number": d.challan_number,
                 "dispatched_address": d.dispatched_address,
-                "date_dispatched": d.date_dispatched.isoformat() if d.date_dispatched else None
+                "date_dispatched": d.date_dispatched.strftime("%Y-%m-%d") if d.date_dispatched else None
             } for d in dispatches
         ]
-    }), 200
+    })
 
 # ---------------- SUPPLY REPORT ----------------
 @report.route('/supply', methods=['GET'])
@@ -52,8 +53,7 @@ def get_supply_report():
 
     supplies = query.order_by(Dispatch.date_dispatched.desc()).all()
 
-    return jsonify({
-        "data": [
+    return api_response(status_code=200, message="Supply report retrieved successfully", data =[
             {
                 "id": s.id,
                 "product_id": s.product_id,
@@ -62,11 +62,10 @@ def get_supply_report():
                 "party_id": s.party_id,
                 "e_waybill_number_s": s.e_waybill_number_s,
                 "challan_number": s.challan_number,
-                "date_supplied": s.date_supplied.isoformat() if s.date_supplied else None,
+                "date_supplied": s.date_supplied.strftime("%Y-%m-%d") if s.date_supplied else None,
                 "remarks": s.remarks
             } for s in supplies
-        ]
-    }), 200
+        ])
 
 @report.route('/max-sold-product', methods=['GET'])
 @jwt_required()
@@ -79,15 +78,15 @@ def max_sold_product():
      .first()
 
     if not result:
-        return jsonify({"msg": "No data available"}), 404
+        return api_response(status_code=404, message="No data available")
 
     product = Product.query.get(result.product_id)
 
-    return jsonify({
+    return api_response(status_code=200, message="Max sold product retrieved successfully", data={
         "product_id": product.id,
         "product_name": product.name,
         "total_sold": result.total_sold
-    }), 200
+    })
 
 @report.route('/frequent-party', methods=['GET'])
 @jwt_required()
@@ -100,15 +99,15 @@ def frequent_party():
      .first()
 
     if not result:
-        return jsonify({"msg": "No data available"}), 404
+        return api_response(status_code=404, message="No data available")
 
     party = Party.query.get(result.party_id)
 
-    return jsonify({
+    return api_response(status_code=200, message="Frequent party retrieved successfully", data={
         "party_id": party.id,
         "party_name": party.name,
         "dispatch_count": result.dispatch_count
-    }), 200
+    })
 
 
 
@@ -127,6 +126,6 @@ def stock_wise_products():
             "status": "Low Stock" if p.stock < 10 else "Normal"
         })
 
-    return jsonify(result), 200
+    return api_response(status_code=200, message="Stock-wise products retrieved successfully", data=result)
 
 

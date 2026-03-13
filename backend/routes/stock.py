@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from models import Dispatch, Product, Supply, db
+from utils.api_response import api_response
 
 stock = Blueprint('stock', __name__, url_prefix='/stock')
 
@@ -10,12 +11,12 @@ stock = Blueprint('stock', __name__, url_prefix='/stock')
 def get_product_stock(product_id):
     product = Product.query.get_or_404(product_id)
 
-    return jsonify({
+    return api_response(status_code=200, message="Product stock retrieved successfully", data={
         "product_id": product.id,
         "name": product.name,
         "stock": product.stock,
         "unit": product.unit
-    }), 200
+    })
 
 
 @stock.route('/get_all', methods=['GET'])
@@ -33,7 +34,7 @@ def get_all_products():
 
     products = pagination.items
 
-    return jsonify({
+    return api_response(status_code=200, message="All products retrieved successfully", data={
         "data": [
             {
                 "product_id": p.id,
@@ -50,4 +51,4 @@ def get_all_products():
             "has_next": pagination.has_next,
             "has_prev": pagination.has_prev
         }
-    }), 200
+    })

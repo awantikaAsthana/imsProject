@@ -2,14 +2,18 @@ import { Bell, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {useState} from "react";
+import { log } from "console";
 
 interface HeaderProps {
   title: string;
   subtitle?: string;
+  initial?: string;
+
 }
 
-const Header = ({ title, subtitle }: HeaderProps) => {
-  return (
+const Header = ({ title, subtitle, initial }: HeaderProps) => {
+   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-card px-6">
       <div>
         <h1 className="text-xl font-semibold text-foreground">{title}</h1>
@@ -36,7 +40,7 @@ const Header = ({ title, subtitle }: HeaderProps) => {
         <Avatar className="h-9 w-9">
           <AvatarImage src="" />
           <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
-            JD
+            {initial}
           </AvatarFallback>
         </Avatar>
       </div>

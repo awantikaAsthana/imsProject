@@ -1,190 +1,350 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { products } from "@/data/mockData";
-import { Send, Package } from "lucide-react";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+
+import { Send, ChevronsUpDown, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+
 import { useToast } from "@/hooks/use-toast";
 
-interface DispatchRecord {
-  id: string;
-  productId: string;
-  productName: string;
-  quantity: number;
-  destination: string;
-  dispatchDate: string;
-  status: "pending" | "in-transit" | "delivered";
-}
+import {
+  createDispatch,
+  getDispatchHistory,
+  DispatchRecord,
+} from "@/api/dispatch";
+
+import { getProductData } from "@/api/product";
+import { getSuppliers } from "@/api/supplier";
 
 const Dispatch = () => {
   const { toast } = useToast();
-  const [dispatches, setDispatches] = useState<DispatchRecord[]>([
-    {
-      id: "1",
-      productId: "1",
-      productName: "Wireless Keyboard",
-      quantity: 25,
-      destination: "New York Warehouse",
-      dispatchDate: "2024-01-15",
-      status: "delivered",
-    },
-    {
-      id: "2",
-      productId: "4",
-      productName: "Monitor Stand",
-      quantity: 10,
-      destination: "Los Angeles Store",
-      dispatchDate: "2024-01-16",
-      status: "in-transit",
-    },
-  ]);
+
+  const [dispatches, setDispatches] = useState<DispatchRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const [products, setProducts] = useState<any[]>([]);
+  const [parties, setParties] = useState<any[]>([]);
+
+  const [productOpen, setProductOpen] = useState(false);
+  const [partyOpen, setPartyOpen] = useState(false);
 
   const [formData, setFormData] = useState({
-    productId: "",
+    product_id: "",
     quantity: "",
-    destination: "",
+    recipient: "",
+    party_id: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const product = products.find(p => p.id === formData.productId);
-    if (!product) return;
+  const fetchDispatches = async () => {
+    setLoading(true);
 
-    const newDispatch: DispatchRecord = {
-      id: Date.now().toString(),
-      productId: formData.productId,
-      productName: product.name,
-      quantity: parseInt(formData.quantity),
-      destination: formData.destination,
-      dispatchDate: new Date().toISOString().split("T")[0],
-      status: "pending",
-    };
+    try {
+      const data = await getDispatchHistory();
+      setDispatches(data.data);
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to load dispatch history",
+        variant: "destructive",
+      });
+    }
 
-    setDispatches([newDispatch, ...dispatches]);
-    setFormData({ productId: "", quantity: "", destination: "" });
-    
-    toast({
-      title: "Dispatch Created",
-      description: `${newDispatch.quantity} units of ${product.name} dispatched to ${newDispatch.destination}`,
-    });
+    setLoading(false);
   };
 
-  const getStatusColor = (status: DispatchRecord["status"]) => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
-      case "in-transit":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
-      case "delivered":
-        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+  const loadDropdowns = async () => {
+    try {
+      const productData = await getProductData();
+      const partyData = await getSuppliers();
+      setProducts(productData.data.data.data);
+      setParties(partyData.data.data.data);
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to load dropdown data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchDispatches();
+    loadDropdowns();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      await createDispatch({
+        product_id: Number(formData.product_id),
+        quantity: Number(formData.quantity),
+        recipient: formData.recipient,
+        party_id: Number(formData.party_id),
+      });
+
+      toast({
+        title: "Success",
+        description: "Dispatch created successfully",
+      });
+
+      setFormData({
+        product_id: "",
+        quantity: "",
+        recipient: "",
+        party_id: "",
+      });
+
+      fetchDispatches();
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description:
+          err?.response?.data?.message || "Failed to create dispatch",
+        variant: "destructive",
+      });
     }
   };
 
   return (
     <MainLayout title="Dispatch" subtitle="Send products to destinations">
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Dispatch Form */}
-        <Card className="lg:col-span-1">
+        {/* DISPATCH FORM */}
+
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Send className="h-5 w-5" />
-              New Dispatch
-            </CardTitle>
-            <CardDescription>Enter product dispatch details</CardDescription>
+            <CardTitle>New Dispatch</CardTitle>
+            <CardDescription>Create dispatch record</CardDescription>
           </CardHeader>
+
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="product">Product</Label>
-                <Select
-                  value={formData.productId}
-                  onValueChange={(value) => setFormData({ ...formData, productId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select product" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products.filter(p => p.quantity > 0).map((product) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4" />
-                          {product.name} ({product.quantity} available)
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* PRODUCT DROPDOWN */}
+
+              <div>
+                <Label>Product</Label>
+
+                <Popover open={productOpen} onOpenChange={setProductOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                    >
+                      {formData.product_id
+                        ? products.find((p) => p.id == formData.product_id)
+                            ?.name
+                        : "Select product"}
+
+                      <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search product..." />
+                      <CommandEmpty>No product found</CommandEmpty>
+
+                      <CommandGroup>
+                        {products.map((product) => (
+                          <CommandItem
+                            key={product.id}
+                            value={product.name}
+                            onSelect={() => {
+                              setFormData({
+                                ...formData,
+                                product_id: product.id,
+                              });
+                              setProductOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                formData.product_id == product.id
+                                  ? "opacity-100"
+                                  : "opacity-0",
+                              )}
+                            />
+                            {product.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="quantity">Quantity</Label>
+              {/* QUANTITY */}
+
+              <div>
+                <Label>Quantity</Label>
                 <Input
-                  id="quantity"
                   type="number"
                   min="1"
-                  placeholder="Enter quantity"
                   value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      quantity: e.target.value,
+                    })
+                  }
                   required
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="destination">Destination</Label>
+              {/* RECIPIENT */}
+
+              <div>
+                <Label>Recipient</Label>
                 <Input
-                  id="destination"
-                  placeholder="Enter destination"
-                  value={formData.destination}
-                  onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                  value={formData.recipient}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      recipient: e.target.value,
+                    })
+                  }
+                  placeholder="Warehouse / Party name"
                   required
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={!formData.productId}>
-                <Send className="h-4 w-4 mr-2" />
+              {/* PARTY DROPDOWN */}
+
+              <div>
+                <Label>Party</Label>
+
+                <Popover open={partyOpen} onOpenChange={setPartyOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                    >
+                      {formData.party_id
+                        ? parties.find((p) => p.id == formData.party_id)?.name
+                        : "Select party"}
+
+                      <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search party..." />
+                      <CommandEmpty>No party found</CommandEmpty>
+
+                      <CommandGroup>
+                        {parties.map((party) => (
+                          <CommandItem
+                            key={party.id}
+                            value={party.name}
+                            onSelect={() => {
+                              setFormData({
+                                ...formData,
+                                party_id: party.id,
+                              });
+                              setPartyOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                formData.party_id == party.id
+                                  ? "opacity-100"
+                                  : "opacity-0",
+                              )}
+                            />
+                            {party.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <Button className="w-full" type="submit">
+                <Send className="mr-2 h-4 w-4" />
                 Create Dispatch
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        {/* Dispatch History */}
+        {/* DISPATCH HISTORY */}
+
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Dispatch History</CardTitle>
-            <CardDescription>Recent product dispatches</CardDescription>
+            <CardDescription>Recent dispatch records</CardDescription>
           </CardHeader>
+
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>ID</TableHead>
                   <TableHead>Product</TableHead>
                   <TableHead>Quantity</TableHead>
-                  <TableHead>Destination</TableHead>
+                  <TableHead>Recipient</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
-                {dispatches.map((dispatch) => (
-                  <TableRow key={dispatch.id}>
-                    <TableCell className="font-medium">{dispatch.productName}</TableCell>
-                    <TableCell>{dispatch.quantity}</TableCell>
-                    <TableCell>{dispatch.destination}</TableCell>
-                    <TableCell>{dispatch.dispatchDate}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(dispatch.status)}>
-                        {dispatch.status}
-                      </Badge>
-                    </TableCell>
+                {dispatches.map((d) => (
+                  <TableRow key={d.id}>
+                    <TableCell>{d.id}</TableCell>
+                    <TableCell>{d.product_id}</TableCell>
+                    <TableCell>{d.quantity}</TableCell>
+                    <TableCell>{d.recipient}</TableCell>
+                    <TableCell>{d.date_dispatched}</TableCell>
                   </TableRow>
                 ))}
+
+                {loading && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center">
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>

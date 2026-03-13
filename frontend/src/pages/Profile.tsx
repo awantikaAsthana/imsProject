@@ -67,8 +67,8 @@ const Profile = () => {
     setIsUpdating(true);
     
     try {
-      const success = await changePassword(currentPassword, newPassword);
-      if (success) {
+      const response = await changePassword(currentPassword, newPassword);
+      if (response["success"]) {
         toast({
           title: "Password changed",
           description: "Your password has been successfully updated.",
@@ -76,10 +76,10 @@ const Profile = () => {
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
-      } else {
+      } else if(!response["error"]){
         toast({
           title: "Error",
-          description: "Current password is incorrect.",
+          description: response["msg"] || "Failed to change password.",
           variant: "destructive",
         });
       }
@@ -148,7 +148,7 @@ const Profile = () => {
               <CardHeader>
                 <CardTitle>Profile Information</CardTitle>
                 <CardDescription>
-                  Update your personal information and email address
+                  Update your personal information and Username
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -167,7 +167,7 @@ const Profile = () => {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
+                    <Label htmlFor="email">Username</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
