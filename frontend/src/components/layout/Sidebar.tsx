@@ -17,6 +17,7 @@ const navigation = [
   { name: "Products", href: "/products", icon: Package },
   { name: "Dispatch", href: "/dispatch", icon: Send },
   { name: "Supply", href: "/supply", icon: PackagePlus },
+  { name: "Parties", href: "/party", icon: Users },
   { name: "Users", href: "/users", icon: Users },
   { name: "Reports", href: "/reports", icon: BarChart3 },
 ];

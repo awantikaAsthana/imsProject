@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { users, User } from "@/data/mockData";
+import { getUsers, createAdmin, updateUserStatus, User } from "@/api/users";
+import { useDebounce } from "@/hooks/useDebounce";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
 import {
   Table,
   TableBody,
@@ -13,158 +16,121 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Plus, Search, Edit, Trash2, Mail } from "lucide-react";
-import { cn } from "@/lib/utils";
 
-const roleStyles = {
-  admin: "bg-primary/10 text-primary border-primary/20",
-  manager: "bg-success/10 text-success border-success/20",
-  staff: "bg-muted text-muted-foreground border-border",
-};
+import { Label } from "@/components/ui/label";
+
+import { Plus, Search, PauseCircle, PlayCircle } from "lucide-react";
 
 const statusStyles = {
-  active: "bg-success/10 text-success border-success/20",
-  inactive: "bg-muted text-muted-foreground border-border",
+  active: "bg-green-100 text-green-700",
+  suspended: "bg-red-100 text-red-700",
 };
 
 const UsersPage = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [userList, setUserList] = useState<User[]>(users);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
+
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const [loading, setLoading] = useState(false);
+
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
-    role: "staff" as User["role"],
+    password: "",
   });
 
-  const filteredUsers = userList.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+const fetchUsers = async () => {
+  setLoading(true);
 
-  const handleAddUser = () => {
-    const user: User = {
-      id: Date.now().toString(),
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      status: "active",
-      joinDate: new Date().toISOString().split("T")[0],
-    };
-    setUserList([user, ...userList]);
-    setNewUser({ name: "", email: "", role: "staff" });
-    setIsDialogOpen(false);
+  const data = await getUsers(page, 10, debouncedSearch);
+
+  setUsers(data.users);
+  setTotalPages(data.pagination.pages);
+
+  setLoading(false);
+};
+
+  useEffect(() => {
+    fetchUsers();
+  }, [page, debouncedSearch]);
+
+  const handleCreate = async () => {
+    await createAdmin(newUser);
+
+    setCreateOpen(false);
+
+    setNewUser({
+      name: "",
+      email: "",
+      password: "",
+    });
+
+    fetchUsers();
   };
 
-  const handleDeleteUser = (id: string) => {
-    setUserList(userList.filter((u) => u.id !== id));
+  const handleSuspend = (user: User) => {
+    setSelectedUser(user);
+    setConfirmOpen(true);
   };
 
-  const getInitials = (name: string) => {
-    return name
+  const confirmSuspend = async () => {
+    if (!selectedUser) return;
+
+    const newStatus =
+      selectedUser.status === "active" ? "suspended" : "active";
+
+    await updateUserStatus(selectedUser.id, newStatus);
+
+    setConfirmOpen(false);
+    fetchUsers();
+  };
+
+  const initials = (name: string) =>
+    name
       .split(" ")
       .map((n) => n[0])
       .join("")
       .toUpperCase();
-  };
 
   return (
-    <MainLayout title="Users" subtitle="Manage team members and permissions">
-      {/* Actions Bar */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <MainLayout title="Users" subtitle="Manage users & permissions">
+      {/* Search + Add */}
+      <div className="flex justify-between mb-6">
+        <div className="relative w-80">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search users..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
+            placeholder="Search users..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add User
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New User</DialogTitle>
-              <DialogDescription>
-                Enter the details for the new team member.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  placeholder="John Doe"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  placeholder="john@company.com"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="role">Role</Label>
-                <Select
-                  value={newUser.role}
-                  onValueChange={(value: User["role"]) =>
-                    setNewUser({ ...newUser, role: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="staff">Staff</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddUser}>Add User</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Admin
+        </Button>
       </div>
 
-      {/* Users Table */}
-      <div className="rounded-xl border border-border bg-card card-shadow animate-fade-in">
+      {/* TABLE */}
+
+      <div className="border rounded-xl bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -172,67 +138,173 @@ const UsersPage = () => {
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Joined</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
-            {filteredUsers.map((user) => (
+            {users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9">
-                      <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                        {getInitials(user.name)}
+                  <div className="flex gap-3 items-center">
+                    <Avatar>
+                      <AvatarFallback>
+                        {initials(user.name)}
                       </AvatarFallback>
                     </Avatar>
+
                     <div>
                       <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Mail className="h-3 w-3" />
+                      <p className="text-sm text-muted-foreground">
                         {user.email}
                       </p>
                     </div>
                   </div>
                 </TableCell>
+
                 <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={cn("font-medium capitalize", roleStyles[user.role])}
-                  >
-                    {user.role}
-                  </Badge>
+                  <Badge>{user.role}</Badge>
                 </TableCell>
+
                 <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={cn("font-medium capitalize", statusStyles[user.status])}
-                  >
+                  <Badge className={statusStyles[user.status]}>
                     {user.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {new Date(user.joinDate).toLocaleDateString()}
+
+                <TableCell>
+                  {new Date(user.created_at).toLocaleDateString()}
                 </TableCell>
+
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteUser(user.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSuspend(user)}
+                  >
+                    {user.status === "active" ? (
+                      <>
+                        <PauseCircle className="h-4 w-4 mr-1" />
+                        Suspend
+                      </>
+                    ) : (
+                      <>
+                        <PlayCircle className="h-4 w-4 mr-1" />
+                        Activate
+                      </>
+                    )}
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
+
+            {loading && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-6">
+                  Loading users...
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
+
+      {/* PAGINATION */}
+
+      <div className="flex justify-end gap-2 mt-4">
+        <Button
+          variant="outline"
+          disabled={page === 1}
+          onClick={() => setPage(page - 1)}
+        >
+          Prev
+        </Button>
+
+        <Button
+          variant="outline"
+          disabled={page === totalPages}
+          onClick={() => setPage(page + 1)}
+        >
+          Next
+        </Button>
+      </div>
+
+      {/* CREATE USER */}
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Admin</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div>
+              <Label>Name</Label>
+              <Input
+                value={newUser.name}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, name: e.target.value })
+                }
+              />
+            </div>
+
+            <div>
+              <Label>Email</Label>
+              <Input
+                value={newUser.email}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, email: e.target.value })
+                }
+              />
+            </div>
+
+            <div>
+              <Label>Password</Label>
+              <Input
+                type="password"
+                value={newUser.password}
+                onChange={(e) =>
+                  setNewUser({
+                    ...newUser,
+                    password: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={handleCreate}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* SUSPEND CONFIRM */}
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedUser?.status === "active"
+                ? "Suspend User?"
+                : "Activate User?"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <p>
+            Are you sure you want to change status for{" "}
+            <b>{selectedUser?.name}</b>?
+          </p>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+
+            <Button onClick={confirmSuspend}>Confirm</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };

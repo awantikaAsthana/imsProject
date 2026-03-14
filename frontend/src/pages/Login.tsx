@@ -107,7 +107,7 @@ const Login = () => {
             </Button>
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Demo: Use any email with password 6+ characters
+            Demo: username : user , password : 1234567
           </p>
         </CardContent>
       </Card>
