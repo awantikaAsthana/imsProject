@@ -1,6 +1,5 @@
 backend/__pycache__/
 backend/*.pyc
-backend/instance/
 backend/.env
 backend/.venv/
 frontend/node_modules/

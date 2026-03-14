@@ -1,0 +1,7 @@
+Login Credentials
+Email	Password	Role
+admin@textdye.com	password123	admin
+rajesh@textdye.com	password123	manager
+priya@textdye.com	password123	manager
+amit@textdye.com	password123	user
+sunita@textdye.com	password123	user
