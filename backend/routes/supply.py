@@ -67,16 +67,16 @@ def get_supplies():
         200,
         "Supplies fetched successfully",
         {
-            "data": [
-                {
-                    "id": s.Supply.id,
-                    "product_name": s.Product.name,
-                    "supplier_name": s.Supplier.name,
-                    "quantity": s.Supply.quantity,
-                    "date_supplied": s.Supply.date_supplied.strftime("%Y-%m-%d") if s.Supply.date_supplied else None,
-                }
-                for s in pagination.items
-            ],
+            "data":[
+                        {
+                            "id": s.Supply.id,
+                            "product_name": s.Product.name,
+                            "supplier_name": s.Supplier.name,
+                            "quantity": s.Supply.quantity,
+                            "date_supplied": s.Supply.date_supplied.strftime("%Y-%m-%d") if s.Supply.date_supplied else None,
+                        }
+                        for s in pagination.items
+                ],
             "pagination": {
                 "page": pagination.page,
                 "per_page": pagination.per_page,

@@ -1,9 +1,9 @@
 
 from flask import Flask
-from flasgger import Swagger
 from flask_restx import Api
 from routes.stock import stock
 from routes.supply import supply
+from routes.report import report
 from routes.dispatch import dispatch
 from routes.product import product_bp
 from routes.supplier import supplier_bp
@@ -19,7 +19,8 @@ app = Flask(__name__)
 CORS(
     app,
     resources={r"/api/*": {"origins": "*"}},
-    supports_credentials=True
+    supports_credentials=True,
+    allow_headers=["Content-Type", "Authorization"]
 )
 
 app.config.from_object(Config)
@@ -34,6 +35,7 @@ app.register_blueprint(stock, url_prefix='/api/stock')
 app.register_blueprint(supply, url_prefix='/api/supply')
 app.register_blueprint(supplier_bp, url_prefix='/api/supplier')
 app.register_blueprint(dispatch, url_prefix='/api/dispatch')
+app.register_blueprint(report, url_prefix='/api/report')
 
 
 with app.app_context():

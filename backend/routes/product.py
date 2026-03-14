@@ -34,7 +34,36 @@ def create_product():
 @product_bp.route('/', methods=['GET'])
 @jwt_required()
 def get_products():
-    # Pagination params
+
+    get_all = request.args.get('all', 'false').lower() == 'true'
+
+    # RETURN ALL PRODUCTS (NO PAGINATION)
+    if get_all:
+        products = Product.query.order_by(Product.created_at.desc()).all()
+
+        return api_response(
+            status_code=200,
+            message="All products retrieved successfully",
+            data={
+                "data": [
+                    {
+                        "id": p.id,
+                        "name": p.name,
+                        "description": p.description,
+                        "sp": p.sp,
+                        "cp": p.cp,
+                        "stock": p.stock,
+                        "unit": p.unit,
+                        "created_by": p.created_by,
+                        "created_at": p.created_at.strftime("%Y-%m-%d"),
+                        "is_active": p.is_active
+                    } for p in products
+                ],
+                "pagination": None
+            }
+        )
+
+    # NORMAL PAGINATION
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 50, type=int)
 
@@ -44,32 +73,34 @@ def get_products():
         error_out=False
     )
 
-    products = pagination.items
-
-    return api_response(status_code=200, message="Products retrieved successfully", data={
-        "data": [
-            {
-                "id": p.id,
-                "name": p.name,
-                "description": p.description,
-                "sp": p.sp,
-                "cp": p.cp,
-                "stock": p.stock,
-                "unit": p.unit,
-                "created_by": p.created_by,
-                "created_at": p.created_at.strftime("%Y-%m-%d"),
-                "is_active": p.is_active
-            } for p in products
-        ],
-        "pagination": {
-            "page": pagination.page,
-            "per_page": pagination.per_page,
-            "total_items": pagination.total,
-            "total_pages": pagination.pages,
-            "has_next": pagination.has_next,
-            "has_prev": pagination.has_prev
+    return api_response(
+        status_code=200,
+        message="Products retrieved successfully",
+        data={
+            "data": [
+                {
+                    "id": p.id,
+                    "name": p.name,
+                    "description": p.description,
+                    "sp": p.sp,
+                    "cp": p.cp,
+                    "stock": p.stock,
+                    "unit": p.unit,
+                    "created_by": p.created_by,
+                    "created_at": p.created_at.strftime("%Y-%m-%d"),
+                    "is_active": p.is_active
+                } for p in pagination.items
+            ],
+            "pagination": {
+                "page": pagination.page,
+                "per_page": pagination.per_page,
+                "total_items": pagination.total,
+                "total_pages": pagination.pages,
+                "has_next": pagination.has_next,
+                "has_prev": pagination.has_prev
+            }
         }
-    })
+    )
 
 
 @product_bp.route('/<int:product_id>', methods=['GET'])

@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Dispatch from "./pages/Dispatch";
 import Supply from "./pages/Supply";
+import Party from "./pages/Party";
 import UsersPage from "./pages/UsersPage";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
@@ -63,6 +64,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Supply />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/party"
+        element={
+          <ProtectedRoute>
+            <Party />
           </ProtectedRoute>
         }
       />

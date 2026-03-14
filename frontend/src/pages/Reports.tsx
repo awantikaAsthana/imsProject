@@ -1,5 +1,5 @@
+import { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { salesData, categoryData, products } from "@/data/mockData";
 import {
   AreaChart,
   Area,
@@ -15,164 +15,303 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Download, Calendar } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
-const COLORS = ["hsl(234, 89%, 60%)", "hsl(160, 84%, 39%)", "hsl(38, 92%, 50%)", "hsl(220, 9%, 46%)"];
+import {
+  getDispatchReport,
+  getSupplyReport,
+  getStockProducts,
+  getMaxSoldProduct,
+  getFrequentParty,
+} from "@/api/reports";
+
+const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444"];
+
+interface DispatchItem {
+  id: number;
+  product_id: number;
+  quantity: number;
+  recipient: string;
+  party_id: number;
+  e_waybill_number: string;
+  challan_number: string;
+  dispatched_address: string;
+  date_dispatched: string | null;
+}
+
+interface SupplyItem {
+  id: number;
+  product_id: number;
+  quantity: number;
+  supplier: string;
+  party_id: number;
+  e_waybill_number_s: string;
+  challan_number: string;
+  date_supplied: string | null;
+  remarks: string;
+}
+
+interface StockItem {
+  product_id: number;
+  product_name: string;
+  stock: number;
+  unit: string;
+  status: "Low Stock" | "Normal";
+}
+
+interface MaxProduct {
+  product_id: number;
+  product_name: string;
+  total_sold: number;
+}
+
+interface FrequentParty {
+  party_id: number;
+  party_name: string;
+  dispatch_count: number;
+}
 
 const Reports = () => {
-  const totalSales = salesData.reduce((acc, item) => acc + item.sales, 0);
-  const totalOrders = salesData.reduce((acc, item) => acc + item.orders, 0);
-  const averageOrderValue = totalSales / totalOrders;
+  const { toast } = useToast();
 
+  const [loading, setLoading] = useState(true);
+  const [dispatch, setDispatch] = useState<DispatchItem[]>([]);
+  const [supply, setSupply] = useState<SupplyItem[]>([]);
+  const [stock, setStock] = useState<StockItem[]>([]);
+  const [maxProduct, setMaxProduct] = useState<MaxProduct | null>(null);
+  const [frequentParty, setFrequentParty] = useState<FrequentParty | null>(
+    null
+  );
+
+  useEffect(() => {
+    loadReports();
+  }, []);
+
+  const loadReports = async () => {
+    setLoading(true);
+    try {
+      const [dispatchData, supplyData, stockData, maxSold, party] =
+        await Promise.all([
+          getDispatchReport(),
+          getSupplyReport(),
+          getStockProducts(),
+          getMaxSoldProduct().catch(() => null),
+          getFrequentParty().catch(() => null),
+        ]);
+
+      setDispatch(dispatchData ?? []);
+      setSupply(supplyData ?? []);
+      setStock(stockData ?? []);
+      setMaxProduct(maxSold);
+      setFrequentParty(party);
+    } catch (error) {
+      console.error("Failed to load reports:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load report data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------- DISPATCH monthly aggregation ----------
+  const dispatchByMonth: Record<string, number> = {};
+  dispatch.forEach((d) => {
+    const month = d.date_dispatched?.slice(0, 7);
+    if (month) {
+      dispatchByMonth[month] =
+        (dispatchByMonth[month] || 0) + Number(d.quantity);
+    }
+  });
+  const dispatchChart = Object.keys(dispatchByMonth)
+    .sort()
+    .map((m) => ({
+      month: m,
+      quantity: dispatchByMonth[m],
+    }));
+
+  // ---------- SUPPLY monthly aggregation ----------
+  const supplyByMonth: Record<string, number> = {};
+  supply.forEach((s) => {
+    const month = s.date_supplied?.slice(0, 7);
+    if (month) {
+      supplyByMonth[month] =
+        (supplyByMonth[month] || 0) + Number(s.quantity);
+    }
+  });
+  const supplyChart = Object.keys(supplyByMonth)
+    .sort()
+    .map((m) => ({
+      month: m,
+      quantity: supplyByMonth[m],
+    }));
+
+  // ---------- STOCK pie ----------
   const stockStatus = [
-    { name: "In Stock", value: products.filter((p) => p.status === "in-stock").length },
-    { name: "Low Stock", value: products.filter((p) => p.status === "low-stock").length },
-    { name: "Out of Stock", value: products.filter((p) => p.status === "out-of-stock").length },
+    {
+      name: "Low Stock",
+      value: stock.filter((s) => s.status === "Low Stock").length,
+    },
+    {
+      name: "Normal",
+      value: stock.filter((s) => s.status === "Normal").length,
+    },
   ];
 
-  return (
-    <MainLayout title="Reports" subtitle="Analytics and insights">
-      {/* Header Actions */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Calendar className="h-4 w-4" />
-          Jan 2024 - Dec 2024
+  // ---------- LOADING STATE ----------
+  if (loading) {
+    return (
+      <MainLayout
+        title="Reports"
+        subtitle="Dispatch, Supply and Inventory Analytics"
+      >
+        <div className="flex h-[60vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
+      </MainLayout>
+    );
+  }
+
+  return (
+    <MainLayout
+      title="Reports"
+      subtitle="Dispatch, Supply and Inventory Analytics"
+    >
+      {/* HEADER */}
+      <div className="mb-6 flex justify-end">
         <Button variant="outline">
           <Download className="mr-2 h-4 w-4" />
           Export Report
         </Button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="mb-6 grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-border bg-card p-6 card-shadow animate-fade-in">
-          <p className="text-sm font-medium text-muted-foreground">Total Sales</p>
-          <p className="mt-2 text-3xl font-semibold text-card-foreground">
-            ${totalSales.toLocaleString()}
-          </p>
+      {/* SUMMARY */}
+      <div className="grid gap-4 mb-6 md:grid-cols-3">
+        <div className="p-6 rounded-xl border bg-card">
+          <p className="text-sm text-muted-foreground">Total Dispatches</p>
+          <p className="text-3xl font-semibold">{dispatch.length}</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-6 card-shadow animate-fade-in">
-          <p className="text-sm font-medium text-muted-foreground">Total Orders</p>
-          <p className="mt-2 text-3xl font-semibold text-card-foreground">
-            {totalOrders.toLocaleString()}
-          </p>
+
+        <div className="p-6 rounded-xl border bg-card">
+          <p className="text-sm text-muted-foreground">Total Supplies</p>
+          <p className="text-3xl font-semibold">{supply.length}</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-6 card-shadow animate-fade-in">
-          <p className="text-sm font-medium text-muted-foreground">Avg. Order Value</p>
-          <p className="mt-2 text-3xl font-semibold text-card-foreground">
-            ${averageOrderValue.toFixed(2)}
+
+        <div className="p-6 rounded-xl border bg-card">
+          <p className="text-sm text-muted-foreground">Max Sold Product</p>
+          <p className="text-lg font-semibold">
+            {maxProduct?.product_name || "N/A"}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {maxProduct ? `${maxProduct.total_sold} units` : "—"}
           </p>
         </div>
       </div>
 
-      {/* Charts Grid */}
+      {/* SECOND ROW */}
+      <div className="grid gap-4 mb-6 md:grid-cols-2">
+        <div className="p-6 rounded-xl border bg-card">
+          <p className="text-sm text-muted-foreground">
+            Most Frequent Party
+          </p>
+          <p className="text-lg font-semibold">
+            {frequentParty?.party_name || "N/A"}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {frequentParty
+              ? `${frequentParty.dispatch_count} dispatches`
+              : "—"}
+          </p>
+        </div>
+
+        <div className="p-6 rounded-xl border bg-card">
+          <p className="text-sm text-muted-foreground">Low Stock Items</p>
+          <p className="text-3xl font-semibold text-red-500">
+            {stock.filter((s) => s.status === "Low Stock").length}
+          </p>
+        </div>
+      </div>
+
+      {/* CHARTS */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Sales Trend */}
-        <div className="rounded-xl border border-border bg-card p-6 card-shadow animate-fade-in">
-          <h3 className="mb-6 text-lg font-semibold text-card-foreground">Sales Trend</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={salesData}>
-              <defs>
-                <linearGradient id="colorSalesReport" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(234, 89%, 60%)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(234, 89%, 60%)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-              <XAxis dataKey="month" stroke="hsl(220, 9%, 46%)" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="hsl(220, 9%, 46%)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(0, 0%, 100%)",
-                  border: "1px solid hsl(220, 13%, 91%)",
-                  borderRadius: "8px",
-                }}
-              />
-              <Area type="monotone" dataKey="sales" stroke="hsl(234, 89%, 60%)" strokeWidth={2} fillOpacity={1} fill="url(#colorSalesReport)" />
-            </AreaChart>
-          </ResponsiveContainer>
+        {/* DISPATCH TREND */}
+        <div className="rounded-xl border bg-card p-6">
+          <h3 className="mb-6 font-semibold">Dispatch Trend</h3>
+          {dispatchChart.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={dispatchChart}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Area
+                  type="monotone"
+                  dataKey="quantity"
+                  stroke="#6366f1"
+                  fill="#6366f1"
+                  fillOpacity={0.3}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="flex h-[300px] items-center justify-center text-muted-foreground">
+              No dispatch data available
+            </p>
+          )}
         </div>
 
-        {/* Orders by Month */}
-        <div className="rounded-xl border border-border bg-card p-6 card-shadow animate-fade-in">
-          <h3 className="mb-6 text-lg font-semibold text-card-foreground">Orders by Month</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={salesData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-              <XAxis dataKey="month" stroke="hsl(220, 9%, 46%)" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="hsl(220, 9%, 46%)" fontSize={12} tickLine={false} axisLine={false} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(0, 0%, 100%)",
-                  border: "1px solid hsl(220, 13%, 91%)",
-                  borderRadius: "8px",
-                }}
-              />
-              <Bar dataKey="orders" fill="hsl(160, 84%, 39%)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        {/* SUPPLY TREND */}
+        <div className="rounded-xl border bg-card p-6">
+          <h3 className="mb-6 font-semibold">Supply Trend</h3>
+          {supplyChart.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={supplyChart}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="quantity" fill="#10b981" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="flex h-[300px] items-center justify-center text-muted-foreground">
+              No supply data available
+            </p>
+          )}
         </div>
 
-        {/* Category Distribution */}
-        <div className="rounded-xl border border-border bg-card p-6 card-shadow animate-fade-in">
-          <h3 className="mb-6 text-lg font-semibold text-card-foreground">Category Distribution</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={categoryData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={4}
-                dataKey="value"
-              >
-                {categoryData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(0, 0%, 100%)",
-                  border: "1px solid hsl(220, 13%, 91%)",
-                  borderRadius: "8px",
-                }}
-              />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Stock Status */}
-        <div className="rounded-xl border border-border bg-card p-6 card-shadow animate-fade-in">
-          <h3 className="mb-6 text-lg font-semibold text-card-foreground">Stock Status</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={stockStatus}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={4}
-                dataKey="value"
-              >
-                <Cell fill="hsl(160, 84%, 39%)" />
-                <Cell fill="hsl(38, 92%, 50%)" />
-                <Cell fill="hsl(0, 84%, 60%)" />
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(0, 0%, 100%)",
-                  border: "1px solid hsl(220, 13%, 91%)",
-                  borderRadius: "8px",
-                }}
-              />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+        {/* STOCK STATUS */}
+        <div className="rounded-xl border bg-card p-6">
+          <h3 className="mb-6 font-semibold">Stock Status</h3>
+          {stock.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={stockStatus}
+                  dataKey="value"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  label
+                >
+                  {stockStatus.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="flex h-[300px] items-center justify-center text-muted-foreground">
+              No stock data available
+            </p>
+          )}
         </div>
       </div>
     </MainLayout>

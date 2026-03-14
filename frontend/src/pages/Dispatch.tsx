@@ -47,7 +47,7 @@ import {
   DispatchRecord,
 } from "@/api/dispatch";
 
-import { getProductData } from "@/api/product";
+import { getAllProducts } from "@/api/product";
 import { getSuppliers } from "@/api/supplier";
 
 const Dispatch = () => {
@@ -62,6 +62,11 @@ const Dispatch = () => {
   const [productOpen, setProductOpen] = useState(false);
   const [partyOpen, setPartyOpen] = useState(false);
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrev, setHasPrev] = useState(false);
+
   const [formData, setFormData] = useState({
     product_id: "",
     quantity: "",
@@ -69,12 +74,20 @@ const Dispatch = () => {
     party_id: "",
   });
 
-  const fetchDispatches = async () => {
+  const fetchDispatches = async (pageNumber = 1) => {
     setLoading(true);
 
     try {
-      const data = await getDispatchHistory();
-      setDispatches(data.data);
+      console.log("Fetching dispatch history for page:", pageNumber);
+      const res = await getDispatchHistory(pageNumber, 10);
+
+      const dispatchData = res;
+      setDispatches(dispatchData.data);
+      
+      setPage(dispatchData.pagination.page);
+      setTotalPages(dispatchData.pagination.total_pages);
+      setHasNext(dispatchData.pagination.has_next);
+      setHasPrev(dispatchData.pagination.has_prev);
     } catch {
       toast({
         title: "Error",
@@ -88,7 +101,7 @@ const Dispatch = () => {
 
   const loadDropdowns = async () => {
     try {
-      const productData = await getProductData();
+      const productData = await getAllProducts();
       const partyData = await getSuppliers();
       setProducts(productData.data.data.data);
       setParties(partyData.data.data.data);
@@ -102,7 +115,7 @@ const Dispatch = () => {
   };
 
   useEffect(() => {
-    fetchDispatches();
+    fetchDispatches(page);
     loadDropdowns();
   }, []);
 
@@ -321,6 +334,7 @@ const Dispatch = () => {
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Product</TableHead>
+                  <TableHead>Party</TableHead>
                   <TableHead>Quantity</TableHead>
                   <TableHead>Recipient</TableHead>
                   <TableHead>Date</TableHead>
@@ -331,7 +345,8 @@ const Dispatch = () => {
                 {dispatches.map((d) => (
                   <TableRow key={d.id}>
                     <TableCell>{d.id}</TableCell>
-                    <TableCell>{d.product_id}</TableCell>
+                    <TableCell>{d.product_name}</TableCell>
+                    <TableCell>{d.party_name}</TableCell>
                     <TableCell>{d.quantity}</TableCell>
                     <TableCell>{d.recipient}</TableCell>
                     <TableCell>{d.date_dispatched}</TableCell>
@@ -348,6 +363,28 @@ const Dispatch = () => {
               </TableBody>
             </Table>
           </CardContent>
+          {/* Pagination */}
+          <div className="flex items-center justify-between m-4">
+            <Button
+              variant="outline"
+              disabled={!hasPrev}
+              onClick={() => fetchDispatches(page - 1)}
+            >
+              Previous
+            </Button>
+
+            <span className="text-sm font-medium">
+              Page {page} of {totalPages}
+            </span>
+
+            <Button
+              variant="outline"
+              disabled={!hasNext}
+              onClick={() => fetchDispatches(page + 1)}
+            >
+              Next
+            </Button>
+          </div>
         </Card>
       </div>
     </MainLayout>
