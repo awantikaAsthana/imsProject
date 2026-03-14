@@ -1,7 +1,9 @@
-- http://localhost:8080/supply -> next prev not working
-- Users not loading
 - user profile not visible anywhere instead of dashboard
 - dashboard not connected to bacnkend
 - settings not worink=g
+-notification does not working
+-main searchbox not working
+-export not working
+-add date-wise-filter in reports
 
 

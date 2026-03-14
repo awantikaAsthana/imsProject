@@ -165,3 +165,8 @@ def stock_wise_products():
         for p in products
     ]
 
+    return api_response(
+        status_code=200,
+        message="Stock-wise products retrieved successfully",
+        data=result,
+    )
