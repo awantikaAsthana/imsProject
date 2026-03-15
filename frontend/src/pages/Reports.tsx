@@ -183,14 +183,14 @@ const Reports = () => {
     >
       {/* HEADER */}
       <div className="mb-6 flex justify-end">
-        <Button variant="outline">
+        <Button variant="outline" className="w-full sm:w-auto">
           <Download className="mr-2 h-4 w-4" />
           Export Report
         </Button>
       </div>
 
       {/* SUMMARY */}
-      <div className="grid gap-4 mb-6 md:grid-cols-3">
+      <div className="grid gap-4 mb-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
         <div className="p-6 rounded-xl border bg-card">
           <p className="text-sm text-muted-foreground">Total Dispatches</p>
           <p className="text-3xl font-semibold">{dispatch.length}</p>
@@ -213,7 +213,7 @@ const Reports = () => {
       </div>
 
       {/* SECOND ROW */}
-      <div className="grid gap-4 mb-6 md:grid-cols-2">
+      <div className="grid gap-4 mb-6 grid-cols-1 sm:grid-cols-2">
         <div className="p-6 rounded-xl border bg-card">
           <p className="text-sm text-muted-foreground">
             Most Frequent Party

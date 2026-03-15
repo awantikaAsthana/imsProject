@@ -293,9 +293,8 @@ const loadSupplies = async (pageNumber = 1) => {
             <CardTitle>Supply History</CardTitle>
           </CardHeader>
 
-          <CardContent>
-            <Table>
-
+          <CardContent className="overflow-x-auto">
+            <Table className="min-w-[480px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Product</TableHead>

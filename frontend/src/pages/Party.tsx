@@ -140,7 +140,7 @@ const Parties = () => {
       {/* ADD BUTTON */}
 
       <div className="flex justify-end mb-6">
-        <Button onClick={openAdd}>
+        <Button onClick={openAdd} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Add Party
         </Button>
@@ -148,8 +148,8 @@ const Parties = () => {
 
       {/* PARTY TABLE */}
 
-      <div className="rounded-xl border bg-card">
-        <Table>
+      <div className="rounded-xl border bg-card overflow-x-auto">
+        <Table className="min-w-[480px]">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>

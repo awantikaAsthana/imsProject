@@ -111,8 +111,8 @@ const fetchUsers = async () => {
   return (
     <MainLayout title="Users" subtitle="Manage users & permissions">
       {/* Search + Add */}
-      <div className="flex justify-between mb-6">
-        <div className="relative w-80">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between mb-6">
+        <div className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             className="pl-9"
@@ -122,7 +122,7 @@ const fetchUsers = async () => {
           />
         </div>
 
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button onClick={() => setCreateOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Add Admin
         </Button>
@@ -130,8 +130,8 @@ const fetchUsers = async () => {
 
       {/* TABLE */}
 
-      <div className="border rounded-xl bg-card">
-        <Table>
+      <div className="border rounded-xl bg-card overflow-x-auto">
+        <Table className="min-w-[540px]">
           <TableHeader>
             <TableRow>
               <TableHead>User</TableHead>

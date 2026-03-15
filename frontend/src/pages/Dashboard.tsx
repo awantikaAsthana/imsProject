@@ -126,7 +126,7 @@ const Dashboard = () => {
       subtitle={`Welcome ${userName}! Here's what's happening.`}
     >
       {/* ── Metrics Grid ──────────────────────────────── */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Total Products"
           value={stats?.total_products ?? 0}
@@ -179,7 +179,7 @@ const Dashboard = () => {
 
         {/* ── Sales Chart ─────────────────────────────── */}
         <div className="lg:col-span-2 rounded-xl border border-border bg-card p-6 card-shadow animate-fade-in">
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-lg font-semibold text-card-foreground">
                 Sales Overview
@@ -193,7 +193,7 @@ const Dashboard = () => {
                 sales performance
               </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 flex-wrap">
               <Tabs
                 value={timeRange}
                 onValueChange={(v) => setTimeRange(v as TimeRange)}

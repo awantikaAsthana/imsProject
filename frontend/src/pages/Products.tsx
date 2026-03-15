@@ -229,8 +229,8 @@ useEffect(() => {
 
       {/* TABLE */}
 
-      <div className="rounded-xl border bg-card">
-        <Table>
+      <div className="rounded-xl border bg-card overflow-x-auto">
+        <Table className="min-w-[640px]">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
