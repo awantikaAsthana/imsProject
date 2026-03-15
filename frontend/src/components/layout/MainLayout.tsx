@@ -34,9 +34,9 @@ const MainLayout = ({ children, title, subtitle, initial}: MainLayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <div className="pl-64">
+      <div className="md:pl-64">
         <Header title={title} subtitle={subtitle} initial={initial || user.initial} />
-        <main className="p-6">{children}</main>
+        <main className="p-4 md:p-6">{children}</main>
       </div>
     </div>
   );
