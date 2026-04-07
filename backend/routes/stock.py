@@ -16,7 +16,17 @@ def get_product_stock(product_id):
         "name": product.name,
         "stock": product.stock,
         "unit": product.unit
-    })
+    }), 200  
+
+@stock.route('Inventory_value', methods=['GET'])
+@jwt_required() 
+def get_inventory_value():
+    products = Product.query.all()
+    total_value = sum(p.stock * p.unit_price for p in products)
+
+    return jsonify({
+        "total_inventory_value": total_value
+    }), 200
 
 
 @stock.route('/get_all', methods=['GET'])
@@ -51,4 +61,6 @@ def get_all_products():
             "has_next": pagination.has_next,
             "has_prev": pagination.has_prev
         }
-    })
+    }), 200
+
+

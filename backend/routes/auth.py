@@ -157,6 +157,24 @@ def refresh_token():
             "message": "Refresh token invalid or expired"
         }), 401
 
+@auth.route('/get_all', methods=['GET'])
+@jwt_required()
+def get_all(user):
+    if user.role != 'admin':
+        return jsonify({"msg": "Admin access required"}), 403
+    users = User.query.all()
+    return jsonify({
+        "users": [
+            {
+                "id": u.id,
+                "email": u.email,
+                "name": u.name,
+                "role": u.role
+            } for u in users
+        ]
+    }), 200
+
+
 @auth.route('/update',methods=['PUT'])
 @jwt_required()
 def update():   

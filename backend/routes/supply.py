@@ -77,12 +77,14 @@ def get_supplies():
                         }
                         for s in pagination.items
                 ],
-            "pagination": {
-                "page": pagination.page,
-                "per_page": pagination.per_page,
-                "total_items": pagination.total,
-                "total_pages": pagination.pages,
-            },
+        "pagination": {
+            "page": pagination.page,
+            "per_page": pagination.per_page,
+            "total_items": pagination.total,
+            "total_pages": pagination.pages,
+            "has_next": pagination.has_next,
+            "has_prev": pagination.has_prev
+        },
         },
     )
 
@@ -120,12 +122,14 @@ def get_product_supplies(product_id):
                 }
                 for s in pagination.items
             ],
-            "pagination": {
-                "page": pagination.page,
-                "per_page": pagination.per_page,
-                "total_items": pagination.total,
-                "total_pages": pagination.pages
-            }
+        "pagination": {
+            "page": pagination.page,
+            "per_page": pagination.per_page,
+            "total_items": pagination.total,
+            "total_pages": pagination.pages,
+            "has_next": pagination.has_next,
+            "has_prev": pagination.has_prev
+        }
         }
     )
 
@@ -163,12 +167,14 @@ def get_supplies_by_party(party_id):
                 }
                 for s in pagination.items
             ],
-            "pagination": {
-                "page": pagination.page,
-                "per_page": pagination.per_page,
-                "total_items": pagination.total,
-                "total_pages": pagination.pages
-            }
+        "pagination": {
+            "page": pagination.page,
+            "per_page": pagination.per_page,
+            "total_items": pagination.total,
+            "total_pages": pagination.pages,
+            "has_next": pagination.has_next,
+            "has_prev": pagination.has_prev
+        }
         }
     )
 

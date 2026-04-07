@@ -158,7 +158,7 @@ const Dispatch = () => {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* DISPATCH FORM */}
 
-        <Card>
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>New Dispatch</CardTitle>
             <CardDescription>Create dispatch record</CardDescription>
@@ -328,8 +328,8 @@ const Dispatch = () => {
             <CardDescription>Recent dispatch records</CardDescription>
           </CardHeader>
 
-          <CardContent>
-            <Table>
+          <CardContent className="overflow-x-auto">
+            <Table className="min-w-[560px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>

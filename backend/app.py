@@ -6,6 +6,7 @@ from routes.supply import supply
 from routes.report import report
 from routes.dispatch import dispatch
 from routes.product import product_bp
+from routes.dashboard  import dashboard
 from routes.supplier import supplier_bp
 from config import Config
 from extensions import db, bcrypt, jwt
@@ -36,6 +37,7 @@ app.register_blueprint(supply, url_prefix='/api/supply')
 app.register_blueprint(supplier_bp, url_prefix='/api/supplier')
 app.register_blueprint(dispatch, url_prefix='/api/dispatch')
 app.register_blueprint(report, url_prefix='/api/report')
+app.register_blueprint(dashboard, url_prefix='/api/dashboard')
 
 
 with app.app_context():
