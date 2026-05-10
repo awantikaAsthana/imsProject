@@ -1,6 +1,7 @@
 
 from flask import Flask
 from flask_restx import Api
+# Routes : address of the api functions
 from routes.stock import stock
 from routes.supply import supply
 from routes.report import report
@@ -8,10 +9,18 @@ from routes.dispatch import dispatch
 from routes.product import product_bp
 from routes.dashboard  import dashboard
 from routes.supplier import supplier_bp
+
+#  configration of environment variables and database connection
 from config import Config
+
 from extensions import db, bcrypt, jwt
+
 from routes.auth import auth
+
+# CORS is used to allow cross-origin requests from the frontend to the backend. It is configured to allow requests from any origin and to support credentials (cookies, authorization headers, etc.). The allowed headers are specified to include "Content-Type" and "Authorization".
 from flask_cors import CORS
+
+# Using REST api
 
 from models import TokenBlocklist
 
@@ -19,7 +28,7 @@ app = Flask(__name__)
 
 CORS(
     app,
-    resources={r"/api/*": {"origins": "*"}},
+    resources={r"/api/*": {"origins": "*"}},  # Allow requests from any origin to endpoints starting with /api/
     supports_credentials=True,
     allow_headers=["Content-Type", "Authorization"]
 )

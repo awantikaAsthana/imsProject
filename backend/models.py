@@ -114,7 +114,6 @@ class Dispatch(db.Model):
         db.session.add(dispatch)
         return dispatch
 
-
 class Supplier(db.Model):
     __tablename__ = "suppliers"
 

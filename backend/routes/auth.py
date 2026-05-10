@@ -87,7 +87,7 @@ def login():
     }})
 
 @auth.route('/profile', methods=['GET'])
-@jwt_required()
+@jwt_required()  #protecting the route with JWT authentication
 def profile():
     user_id= int(get_jwt_identity())
     user=User.query.get(user_id)
@@ -143,7 +143,6 @@ def refresh_token():
 
     try:
         identity = get_jwt_identity()
-
         new_access_token = create_access_token(identity=identity)
 
         return jsonify({
